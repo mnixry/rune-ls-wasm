@@ -1,33 +1,53 @@
-From 69fb161ec9c5ab4e1b7d4c2f0cba5de76141a76f Mon Sep 17 00:00:00 2001
+From 816b656a1563b4c4cb6337b22b7dd7c3983bcbc3 Mon Sep 17 00:00:00 2001
 From: HexMix <32300164+mnixry@users.noreply.github.com>
-Date: Thu, 2 Oct 2025 22:46:17 +0800
+Date: Fri, 3 Oct 2025 01:28:53 +0800
 Subject: [PATCH] add wasm specific cargo config
 
 ---
- .cargo/config.toml                    |  8 ++++++++
- crates/rune-languageserver/Cargo.toml | 22 ++++++++++++++++++++++
- 2 files changed, 30 insertions(+)
+ .cargo/config.toml                    | 20 ++++++++++++++++++++
+ crates/rune-languageserver/Cargo.toml | 24 +++++++++++++++++++++++-
+ 2 files changed, 43 insertions(+), 1 deletion(-)
  create mode 100644 .cargo/config.toml
 
 diff --git a/.cargo/config.toml b/.cargo/config.toml
 new file mode 100644
-index 00000000..f0485d54
+index 00000000..6ab4877c
 --- /dev/null
 +++ b/.cargo/config.toml
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,20 @@
 +[target.'cfg(target_family = "wasm")']
-+rustflags = ["--cfg", "tokio_unstable"]
++rustflags = [
++    "--cfg", "tokio_unstable",
++    "-C", "link-arg=-pthread", "-C", "link-arg=-flto",
++    "-C", "target-feature=+atomics,+bulk-memory,+mutable-globals",
++    "-C", "link-arg=-s", "-C", "link-arg=MODULARIZE=1",
++    "-C", "link-arg=-s", "-C", "link-arg=FORCE_FILESYSTEM=1",
++    "-C", "link-arg=-s", "-C", "link-arg=EXPORTED_RUNTIME_METHODS=FS",
++    "-C", "link-arg=-s", "-C", "link-arg=SINGLE_FILE=1",
++    "-C", "link-arg=-s", "-C", "link-arg=EXPORT_ES6=1",
++]
++
++[unstable]
++build-std = ["std"]
 +
 +[profile.release]
 +lto = true
 +opt-level = "z"
 +codegen-units = 1
-+panic = "abort"
++panic = "unwind"
 diff --git a/crates/rune-languageserver/Cargo.toml b/crates/rune-languageserver/Cargo.toml
-index 10338d54..b6b586b2 100644
+index 10338d54..0e324b44 100644
 --- a/crates/rune-languageserver/Cargo.toml
 +++ b/crates/rune-languageserver/Cargo.toml
-@@ -21,7 +21,29 @@ tracing-appender = "0.2.2"
+@@ -14,14 +14,36 @@ keywords = ["language", "scripting", "scripting-language"]
+ categories = ["parser-implementations"]
+ 
+ [dependencies]
+-tokio = { version = "1.28.1", features = ["full"] }
++tokio = { version = "*", features = ["sync", "macros", "io-util", "rt", "time"] }
+ anyhow = "1.0.71"
+ tracing = "0.1.37"
+ tracing-appender = "0.2.2"
  tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
  
  rune = { version = "0.14.0", path = "../rune", features = ["languageserver"] }

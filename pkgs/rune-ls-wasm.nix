@@ -1,44 +1,54 @@
 {
   rust-bin,
-  makeRustPlatform,
-  binaryen,
+  callPackage,
+  stdenvNoCC,
+  emscripten,
   inputs,
 }:
 let
-  target = "wasm32-wasip1-threads";
-  rust = rust-bin.stable.latest.default.override {
+  target = "wasm32-unknown-emscripten";
+  rustPackage = rust-bin.nightly.latest;
+  rust = rustPackage.default.override {
     extensions = [ "rust-src" ];
     targets = [ target ];
   };
-  rustPlatform = makeRustPlatform {
-    cargo = rust;
-    rustc = rust;
-  };
-  inherit (inputs) rune-rs;
-  inherit (rustPlatform) buildRustPackage;
+  inherit (inputs) naersk rune-rs;
+  inherit
+    (callPackage naersk {
+      cargo = rust;
+      rustc = rust;
+    })
+    buildPackage
+    ;
 in
-buildRustPackage rec {
-  pname = "rune-ls-wasm";
+buildPackage rec {
+  name = "rune-languageserver";
   version = rune-rs.shortRev;
-
-  src = rune-rs;
-  patches = [ ./0001-add-wasm-specific-cargo-config.patch ];
-  cargoLock.lockFile = ./Cargo.lock;
+  src = stdenvNoCC.mkDerivation {
+    name = "${name}-src";
+    inherit version;
+    src = rune-rs;
+    patches = [ ./0001-add-wasm-specific-cargo-config.patch ];
+    postPatch = ''
+      ln -s ${./Cargo.lock} Cargo.lock
+    '';
+    installPhase = ''
+      cp -r . $out
+    '';
+  };
+  additionalCargoLock = "${rust}/lib/rustlib/src/rust/library/Cargo.lock";
 
   doCheck = false;
-  nativeBuildInputs = [ binaryen ];
+  nativeBuildInputs = [ emscripten ];
   env.RUNE_VERSION = version;
 
-  postPatch = ''
-    ln -s ${./Cargo.lock} Cargo.lock
-  '';
-
-  buildPhase = ''
-    cargo build --target='${target}' --package='rune-languageserver' --release
-  '';
-
-  installPhase = ''
-    mkdir -p $out/bin
-    wasm-opt -Oz target/${target}/release/rune-languageserver.wasm -o $out/bin/rune-languageserver.wasm
-  '';
+  cargoBuildOptions =
+    prev:
+    [
+      "--target"
+      target
+      "--package"
+      "rune-languageserver"
+    ]
+    ++ prev;
 }
