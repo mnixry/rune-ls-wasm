@@ -1,0 +1,62 @@
+From 69fb161ec9c5ab4e1b7d4c2f0cba5de76141a76f Mon Sep 17 00:00:00 2001
+From: HexMix <32300164+mnixry@users.noreply.github.com>
+Date: Thu, 2 Oct 2025 22:46:17 +0800
+Subject: [PATCH] add wasm specific cargo config
+
+---
+ .cargo/config.toml                    |  8 ++++++++
+ crates/rune-languageserver/Cargo.toml | 22 ++++++++++++++++++++++
+ 2 files changed, 30 insertions(+)
+ create mode 100644 .cargo/config.toml
+
+diff --git a/.cargo/config.toml b/.cargo/config.toml
+new file mode 100644
+index 00000000..f0485d54
+--- /dev/null
++++ b/.cargo/config.toml
+@@ -0,0 +1,8 @@
++[target.'cfg(target_family = "wasm")']
++rustflags = ["--cfg", "tokio_unstable"]
++
++[profile.release]
++lto = true
++opt-level = "z"
++codegen-units = 1
++panic = "abort"
+diff --git a/crates/rune-languageserver/Cargo.toml b/crates/rune-languageserver/Cargo.toml
+index 10338d54..b6b586b2 100644
+--- a/crates/rune-languageserver/Cargo.toml
++++ b/crates/rune-languageserver/Cargo.toml
+@@ -21,7 +21,29 @@ tracing-appender = "0.2.2"
+ tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+ 
+ rune = { version = "0.14.0", path = "../rune", features = ["languageserver"] }
++
++[target.'cfg(not(target_family = "wasm"))'.dependencies]
+ rune-modules = { version = "0.14.0", path = "../rune-modules", features = ["full"] }
+ 
++[target.'cfg(target_family = "wasm")'.dependencies]
++rune-modules = { version = "0.14.0", path = "../rune-modules", default-features = false, features = [
++    "time",
++    "json",
++    "toml",
++    "fs",
++    "rand",
++    "os_rng",
++    "small_rng",
++    "std_rng",
++    "thread_rng",
++    "io",
++    "fmt",
++    "base64",
++] }
++
++[dependencies.parking_lot]
++version = "*"
++features = ["nightly"]
++
+ [build-dependencies]
+ anyhow = "1.0.71"
+-- 
+2.51.0
+
