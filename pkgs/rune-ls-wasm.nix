@@ -3,6 +3,7 @@
   callPackage,
   stdenvNoCC,
   emscripten,
+  prettier,
   inputs,
 }:
 let
@@ -39,7 +40,10 @@ buildPackage rec {
   additionalCargoLock = "${rust}/lib/rustlib/src/rust/library/Cargo.lock";
 
   doCheck = false;
-  nativeBuildInputs = [ emscripten ];
+  nativeBuildInputs = [
+    emscripten
+    prettier
+  ];
   env.RUNE_VERSION = version;
 
   cargoBuildOptions =
@@ -51,4 +55,13 @@ buildPackage rec {
       "rune-languageserver"
     ]
     ++ prev;
+
+  copyBins = false;
+  copyLibs = false;
+  postInstall = ''
+    mkdir -p $out/lib
+    install -Dm 755 ./target/${target}/release/rune-languageserver.js $out/lib/rune_languageserver.js
+    install -Dm 755 ./target/${target}/release/rune_languageserver.wasm $out/lib/rune_languageserver.wasm
+    prettier $out/lib/rune_languageserver.js --write
+  '';
 }

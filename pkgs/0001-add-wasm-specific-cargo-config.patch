@@ -18,17 +18,17 @@ index 00000000..6ab4877c
 +[target.'cfg(target_family = "wasm")']
 +rustflags = [
 +    "--cfg", "tokio_unstable",
-+    "-C", "link-arg=-pthread", "-C", "link-arg=-flto",
++    "-C", "link-arg=-pthread",
++    "-C", "link-arg=-flto",
 +    "-C", "target-feature=+atomics,+bulk-memory,+mutable-globals",
 +    "-C", "link-arg=-s", "-C", "link-arg=MODULARIZE=1",
 +    "-C", "link-arg=-s", "-C", "link-arg=FORCE_FILESYSTEM=1",
 +    "-C", "link-arg=-s", "-C", "link-arg=EXPORTED_RUNTIME_METHODS=FS",
-+    "-C", "link-arg=-s", "-C", "link-arg=SINGLE_FILE=1",
 +    "-C", "link-arg=-s", "-C", "link-arg=EXPORT_ES6=1",
 +]
 +
 +[unstable]
-+build-std = ["std"]
++build-std = ["core", "std", "alloc", "proc_macro"]
 +
 +[profile.release]
 +lto = true
