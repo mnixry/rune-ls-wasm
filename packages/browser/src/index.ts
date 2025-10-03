@@ -62,24 +62,32 @@ export class RuneLanguageServer {
   constructor(protected readonly options: RuneLanguageServerOptions) {}
 
   get state() {
-    if (!this.module) return { state: "not-initialized" };
-    if (!(this.stdin && this.stdout)) return { state: "not-running" };
-    if (this.abortReason !== undefined)
-      return { state: "aborted", abortReason: this.abortReason };
-    if (this.exitCode !== undefined)
-      return { state: "exited", exitCode: this.exitCode };
+    return this.module
+      ? this.stdin && this.stdout
+        ? this.abortReason !== undefined
+          ? ({ state: "aborted", abortReason: this.abortReason } as const)
+          : this.exitCode !== undefined
+            ? ({ state: "exited", exitCode: this.exitCode } as const)
+            : ({ state: "running" } as const)
+        : this.stdin && this.stdout
+          ? ({ state: "not-running" } as const)
+          : ({ state: "initialized" } as const)
+      : ({ state: "not-initialized" } as const);
   }
 
   async run() {
-    const stdin = (this.stdin = new StdinQueue());
-    const stdout = (this.stdout = new StdoutSubscriber(this.broadcast));
+    const stdin = new StdinQueue();
+    this.stdin = stdin;
+    const stdout = new StdoutSubscriber(this.broadcast);
+    this.stdout = stdout;
+
     await factory({
       environment: Object.assign(
         Object.create(null),
         this.options.logLevel && {
           RUNE_LOG: this.options.logLevel,
           RUNE_LOG_FILE,
-        }
+        },
       ),
       stdin: () => stdin.dequeueByte(),
       stdout: (byte) => stdout.writeByte(byte),
