@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["Emscripten"],
+  "cSpell.words": ["Emscripten", "shiki"],
   "json.schemaDownload.enable": true,
   "editor.formatOnPaste": true,
   "editor.codeActionsOnSave": {

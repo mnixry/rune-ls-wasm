@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.0",
   "description": "",
-  "main": "dist/index.mjs",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsdown"
   },
