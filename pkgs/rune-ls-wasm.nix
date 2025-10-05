@@ -29,7 +29,7 @@ buildPackage rec {
     name = "${name}-src";
     inherit version;
     src = rune-rs;
-    patches = [ ./0001-add-wasm-specific-cargo-config.patch ];
+    patches = [ ./0001-patch-languageserver-for-emscripten-platform.patch ];
     postPatch = ''
       ln -s ${./Cargo.lock} Cargo.lock
     '';
