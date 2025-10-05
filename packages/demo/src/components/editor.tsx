@@ -30,7 +30,7 @@ const EditorInner: React.FC<{ theme: "dark" | "light" }> = ({ theme }) => {
     if (!highlighterExtension || !client) return [];
     return [
       highlighterExtension,
-      client.plugin("/home/web_user/code.rune", "rune"),
+      client.plugin("file:///home/web_user/code.rune", "rune"),
     ];
   }, [highlighterExtension, client]);
 

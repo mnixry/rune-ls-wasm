@@ -14,7 +14,7 @@ class RuneEmscriptenServerTransport implements Transport {
 
   constructor(options: RuneLanguageServerOptions) {
     this.server = new RuneLanguageServer(options);
-    this.server.subscribe((message) => this.broadcast(message));
+    this.server.subscribe((message) => this.broadcast(JSON.stringify(message)));
   }
 
   protected broadcast(message: string) {
@@ -24,8 +24,14 @@ class RuneEmscriptenServerTransport implements Transport {
   }
 
   send(message: string) {
-    console.log("send", message);
-    this.server.send(message);
+    const parsed = JSON.parse(message);
+    console.log("send", parsed);
+    // if ("method" in parsed && parsed.method === "initialize") {
+    //   setDeep(parsed, "params.capabilities.general.positionEncodings", [
+    //     "utf-8",
+    //   ]);
+    // }
+    this.server.send(parsed);
   }
 
   subscribe(handler: (value: string) => void) {

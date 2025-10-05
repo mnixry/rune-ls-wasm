@@ -2,11 +2,12 @@
 
 interface ModuleExtraOptions {
   FS: typeof FS;
+  ENV: Record<string, string>;
   preInit: (m: Module) => void;
   preRun: (m: Module) => void;
   postRun: (m: Module) => void;
 
-  stdin: () => number | null;
+  stdin: () => number | undefined | null;
   stdout: (byte: number) => void;
   stderr: (byte: number) => void;
 

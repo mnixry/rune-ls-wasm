@@ -1,6 +1,8 @@
 import factory from "./lib/rune_languageserver";
 
-type Subscriber = (message: string) => void;
+type Message = { jsonrpc: string } & Record<string, unknown>;
+
+type Subscriber = (message: Message) => void;
 
 export interface RuneLanguageServerOptions {
   wasmUrl?: URL;
@@ -13,6 +15,7 @@ class StdinQueue {
   protected readonly encoder = new TextEncoder();
   protected readonly messages = [] as Uint8Array[];
   protected offset = 0;
+  protected closed = false;
 
   enqueue(message: string) {
     const encoded = this.encoder.encode(message);
@@ -22,9 +25,16 @@ class StdinQueue {
     this.messages.push(header, encoded);
   }
 
-  dequeueByte(): number | null {
-    const [message = null] = this.messages;
-    if (message === null) return null;
+  dequeueByte(): number | undefined | null {
+    if (this.closed) {
+      // return null means EOF
+      return null;
+    }
+    const [message = undefined] = this.messages;
+    if (message === undefined) {
+      // return undefined means EAGAIN
+      return undefined;
+    }
     if (this.offset >= message.length) {
       this.messages.shift();
       this.offset = 0;
@@ -74,7 +84,7 @@ class StdoutSubscriber {
       case "content":
         this.state.remaining -= decoded.length;
         if (this.state.remaining <= 0) {
-          this.subscriber(this.state.raw);
+          this.subscriber(JSON.parse(this.state.raw));
           this.state = {
             type: "header",
             raw: "",
@@ -120,17 +130,13 @@ export class RuneLanguageServer {
 
     return await new Promise<void>((resolve, reject) =>
       factory({
-        environment: Object.assign(
-          Object.create(null),
-          this.options.logLevel && {
-            RUNE_LOG: this.options.logLevel,
-            RUNE_LOG_FILE,
-          },
-        ),
         stdin: () => stdin.dequeueByte(),
         stdout: (byte) => stdout.writeByte(byte),
-        stderr: (byte) => console.error(byte),
         preRun: (module) => {
+          if (this.options.logLevel) {
+            module.ENV.RUNE_LOG = this.options.logLevel;
+            module.ENV.RUNE_LOG_FILE = RUNE_LOG_FILE;
+          }
           this.module = module;
           this.exitCode = undefined;
           this.abortReason = undefined;
@@ -150,8 +156,8 @@ export class RuneLanguageServer {
     );
   }
 
-  send(message: string) {
-    this.stdin?.enqueue(message);
+  send(message: Message) {
+    this.stdin?.enqueue(JSON.stringify(message));
   }
 
   subscribe(handler: Subscriber): () => void {
@@ -161,7 +167,7 @@ export class RuneLanguageServer {
     };
   }
 
-  protected broadcast(message: string) {
+  protected broadcast(message: Message) {
     for (const subscriber of this.subscribers) {
       try {
         subscriber(message);
