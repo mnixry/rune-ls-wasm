@@ -1,3 +1,8 @@
+import type {
+  RuneLanguageServerEventListener,
+  RuneLanguageServerEventsMap,
+} from "@runels-wasm/browser";
+import { useEffect } from "react";
 import useSWRImmutable from "swr/immutable";
 import { shikiHighlighter, shikiRuneHighlight } from "./language/highlighter";
 import { createRuneLanguageServer } from "./language/server";
@@ -18,4 +23,16 @@ export function useLanguageServer() {
     return { client, server };
   });
   return data;
+}
+
+export function useLanguageServerEvent<
+  K extends keyof RuneLanguageServerEventsMap,
+>(event: K, callback: RuneLanguageServerEventListener<K>) {
+  const { server } = useLanguageServer() ?? {};
+  useEffect(() => {
+    server?.addEventListener(event, callback);
+    return () => {
+      server?.removeEventListener(event, callback);
+    };
+  }, [event, callback, server]);
 }
