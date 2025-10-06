@@ -1,0 +1,39 @@
+@reference "../index.css";
+
+.logsDark {
+  --ansi-black: theme(colors.slate.900);
+  --ansi-red: theme(colors.rose.700);
+  --ansi-green: theme(colors.emerald.700);
+  --ansi-yellow: theme(colors.amber.700);
+  --ansi-blue: theme(colors.sky.700);
+  --ansi-magenta: theme(colors.fuchsia.700);
+  --ansi-cyan: theme(colors.teal.700);
+  --ansi-white: theme(colors.slate.500);
+  --ansi-bright-black: theme(colors.slate.500);
+  --ansi-bright-red: theme(colors.rose.500);
+  --ansi-bright-green: theme(colors.emerald.500);
+  --ansi-bright-yellow: theme(colors.yellow.500);
+  --ansi-bright-blue: theme(colors.sky.500);
+  --ansi-bright-magenta: theme(colors.fuchsia.500);
+  --ansi-bright-cyan: theme(colors.teal.500);
+  --ansi-bright-white: theme(colors.slate.200);
+}
+
+.logs {
+  --ansi-black: theme(colors.slate.900);
+  --ansi-red: theme(colors.rose.800);
+  --ansi-green: theme(colors.emerald.800);
+  --ansi-yellow: theme(colors.amber.800);
+  --ansi-blue: theme(colors.sky.800);
+  --ansi-magenta: theme(colors.fuchsia.800);
+  --ansi-cyan: theme(colors.teal.800);
+  --ansi-white: theme(colors.slate.800);
+  --ansi-bright-black: theme(colors.slate.200);
+  --ansi-bright-red: theme(colors.rose.600);
+  --ansi-bright-green: theme(colors.emerald.600);
+  --ansi-bright-yellow: theme(colors.amber.600);
+  --ansi-bright-blue: theme(colors.sky.600);
+  --ansi-bright-magenta: theme(colors.fuchsia.600);
+  --ansi-bright-cyan: theme(colors.teal.600);
+  --ansi-bright-white: theme(colors.slate.500);
+}
