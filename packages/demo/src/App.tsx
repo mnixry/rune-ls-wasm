@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMeasure } from "react-use";
+import { Editor } from "@/components/editor";
 import { Logs } from "@/components/logs";
 import { ModeToggle } from "@/components/theme-provider";
-import { Editor } from "./components/editor";
+import example from "@/lib/language/example.rune?raw";
 
 const App: React.FC = () => {
   const [ref, { width, height }] = useMeasure();
-  const [value, onChange] = useState("");
+  const [value, onChange] = useState(example);
 
   return (
     <div className="flex h-screen flex-col">
