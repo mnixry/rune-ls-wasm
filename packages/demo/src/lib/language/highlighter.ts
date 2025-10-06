@@ -7,8 +7,14 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
-import type { BundledLanguage, Highlighter, LanguageInput } from "shiki";
+import type {
+  BundledLanguage,
+  Highlighter,
+  LanguageInput,
+  ThemedToken,
+} from "shiki";
 import { getSingletonHighlighter } from "shiki";
+import { cn } from "@/lib/utils";
 import runeSyntax from "./rune.tmLanguage.json";
 
 export async function shikiHighlighter() {
@@ -17,6 +23,14 @@ export async function shikiHighlighter() {
     langs: [runeSyntax as unknown as LanguageInput],
   });
 }
+
+const styleDictToString = (style: Record<string, string>) => {
+  const element = document.createElement("template");
+  for (const [key, value] of Object.entries(style)) {
+    element.style.setProperty(key, value);
+  }
+  return element.style.cssText;
+};
 
 export async function shikiRuneHighlight({
   highlighter,
@@ -49,20 +63,45 @@ export async function shikiRuneHighlight({
       });
     }
 
+    protected tokenToDecoration(token: ThemedToken) {
+      const { color, bgColor, ...rest } = token;
+      const classes = cn(
+        "text-(--fg-color) bg-(--bg-color)",
+        (
+          {
+            [-1]: "",
+            0: "font-normal",
+            1: "font-italic",
+            2: "font-bold",
+            4: "underline",
+            8: "line-through",
+          } as const
+        )[rest.fontStyle ?? -1],
+        rest.htmlAttrs?.class,
+      );
+      return Decoration.mark({
+        class: classes,
+        attributes: {
+          ...rest.htmlAttrs,
+          style: styleDictToString({
+            "--fg-color": color ?? "transparent",
+            "--bg-color": bgColor ?? "transparent",
+            ...rest.htmlStyle,
+          }),
+        },
+      });
+    }
+
     protected applyShikiHl(view: EditorView) {
       const builder = new RangeSetBuilder<Decoration>();
       const doc = view.state.doc.toString();
       const tokens = this.toTokens(doc).tokens.flat();
-      for (const { content, offset, color } of tokens) {
-        if (!color) continue;
+      for (const token of tokens) {
+        const { offset, content } = token;
         builder.add(
           offset,
           offset + content.length,
-          Decoration.mark({
-            attributes: {
-              style: `color: ${color}`,
-            },
-          }),
+          this.tokenToDecoration(token),
         );
       }
       return builder.finish();

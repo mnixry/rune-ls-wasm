@@ -25,12 +25,6 @@ class RuneEmscriptenServerTransport implements Transport {
 
   send(message: string) {
     const parsed = JSON.parse(message);
-    console.log("send", parsed);
-    // if ("method" in parsed && parsed.method === "initialize") {
-    //   setDeep(parsed, "params.capabilities.general.positionEncodings", [
-    //     "utf-8",
-    //   ]);
-    // }
     this.server.send(parsed);
   }
 
@@ -47,7 +41,7 @@ export async function createRuneLanguageServer(
   options: RuneLanguageServerOptions,
 ) {
   const transport = new RuneEmscriptenServerTransport(options);
-  transport.server.run();
+  await transport.server.run();
   const client = new LSPClient({ extensions: languageServerExtensions() });
   client.connect(transport);
   return { client, server: transport.server };
