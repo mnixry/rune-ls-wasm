@@ -1,14 +1,11 @@
 import factory from "./lib/rune_languageserver";
 
-type Message = { jsonrpc: string } & Record<string, unknown>;
-
-type Subscriber = (message: Message) => void;
+export type LSPMessage = { jsonrpc: string } & Record<string, unknown>;
 
 export interface RuneLanguageServerOptions {
   wasmUrl?: URL;
   workerUrl?: URL;
   logLevel?: "trace" | "debug" | "info" | "warn" | "error";
-  subscribeErrorHandler?: (handler: Subscriber, error: unknown) => void;
 }
 
 class StdinQueue {
@@ -49,7 +46,6 @@ type StdoutState =
   | { type: "header"; raw: string; headers: Record<string, string> };
 
 class StdoutSubscriber {
-  protected readonly subscribers = new Set<Subscriber>();
   protected readonly decoder = new TextDecoder();
   protected state: StdoutState = {
     type: "header",
@@ -57,7 +53,7 @@ class StdoutSubscriber {
     headers: Object.create(null),
   };
 
-  constructor(protected readonly subscriber: Subscriber) {}
+  constructor(protected readonly subscriber: (message: LSPMessage) => void) {}
 
   writeByte(byte: number) {
     const decoded = this.decoder.decode(new Uint8Array([byte]));
@@ -98,82 +94,90 @@ class StdoutSubscriber {
 
 const RUNE_LOG_FILE = "/dev/stderr";
 
+export interface RuneLanguageServerEventsMap {
+  "lsp-message": CustomEvent<LSPMessage>;
+  log: CustomEvent<string>;
+  start: CustomEvent<void>;
+  exit: CustomEvent<number>;
+  abort: CustomEvent<string>;
+}
+
+export type RuneLanguageServerEventListener<
+  K extends keyof RuneLanguageServerEventsMap,
+> = (this: RuneLanguageServer, event: RuneLanguageServerEventsMap[K]) => void;
+
 export class RuneLanguageServer {
+  protected readonly eventTarget = new EventTarget();
   protected module?: Awaited<ReturnType<typeof factory>>;
-  protected readonly subscribers = new Set<Subscriber>();
-  protected stdin?: StdinQueue;
+  protected stdin: StdinQueue;
   protected stdout?: StdoutSubscriber;
-  protected exitCode?: number;
-  protected abortReason?: string;
 
   constructor(protected readonly options: RuneLanguageServerOptions) {}
 
-  get state() {
-    return this.module
-      ? this.stdin && this.stdout
-        ? this.abortReason !== undefined
-          ? ({ state: "aborted", abortReason: this.abortReason } as const)
-          : this.exitCode !== undefined
-            ? ({ state: "exited", exitCode: this.exitCode } as const)
-            : ({ state: "running" } as const)
-        : this.stdin && this.stdout
-          ? ({ state: "not-running" } as const)
-          : ({ state: "initialized" } as const)
-      : ({ state: "not-initialized" } as const);
-  }
-
   async run() {
-    const stdin = new StdinQueue();
-    this.stdin = stdin;
-    const stdout = new StdoutSubscriber((message) => this.broadcast(message));
-    this.stdout = stdout;
+    // biome-ignore lint/suspicious/noAssignInExpressions: acknowledged
+    const stdin = (this.stdin = new StdinQueue());
+    // biome-ignore lint/suspicious/noAssignInExpressions: acknowledged
+    const stdout = (this.stdout = new StdoutSubscriber((message) =>
+      this.dispatchEvent("lsp-message", message),
+    ));
 
     return await new Promise<void>((resolve, reject) =>
       factory({
         stdin: () => stdin.dequeueByte(),
         stdout: (byte) => stdout.writeByte(byte),
+        printErr: (message) => this.dispatchEvent("log", message),
         preRun: (module) => {
           if (this.options.logLevel) {
             module.ENV.RUNE_LOG = this.options.logLevel;
             module.ENV.RUNE_LOG_FILE = RUNE_LOG_FILE;
           }
           this.module = module;
-          this.exitCode = undefined;
-          this.abortReason = undefined;
+          this.dispatchEvent("start", undefined);
           resolve();
         },
         onExit: (code) => {
-          this.exitCode = code;
-          console.log("onExit", code);
-          reject(new Error(`RuneLanguageServer exited with code ${code}`));
+          this.dispatchEvent("exit", code);
         },
         onAbort: (reason) => {
-          this.abortReason = reason;
-          console.log("onAbort", reason);
-          reject(new Error(`RuneLanguageServer aborted with reason ${reason}`));
+          this.dispatchEvent("abort", reason);
         },
-      }),
+      }).catch(reject),
     );
   }
 
-  send(message: Message) {
+  send(message: LSPMessage) {
     this.stdin?.enqueue(JSON.stringify(message));
   }
 
-  subscribe(handler: Subscriber): () => void {
-    this.subscribers.add(handler);
-    return () => {
-      this.subscribers.delete(handler);
-    };
+  protected dispatchEvent<K extends keyof RuneLanguageServerEventsMap>(
+    type: K,
+    detail: RuneLanguageServerEventsMap[K]["detail"],
+  ) {
+    this.eventTarget.dispatchEvent(new CustomEvent(type, { detail }));
   }
 
-  protected broadcast(message: Message) {
-    for (const subscriber of this.subscribers) {
-      try {
-        subscriber(message);
-      } catch (error) {
-        this.options.subscribeErrorHandler?.(subscriber, error);
-      }
-    }
+  addEventListener<K extends keyof RuneLanguageServerEventsMap>(
+    type: K,
+    callback: RuneLanguageServerEventListener<K> | null,
+    options?: AddEventListenerOptions | boolean,
+  ) {
+    this.eventTarget.addEventListener(
+      type,
+      callback as EventListenerOrEventListenerObject,
+      options,
+    );
+  }
+
+  removeEventListener<K extends keyof RuneLanguageServerEventsMap>(
+    type: K,
+    callback: RuneLanguageServerEventListener<K> | null,
+    options?: EventListenerOptions | boolean,
+  ) {
+    this.eventTarget.removeEventListener(
+      type,
+      callback as EventListenerOrEventListenerObject,
+      options,
+    );
   }
 }

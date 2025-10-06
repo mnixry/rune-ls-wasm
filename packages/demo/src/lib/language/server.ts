@@ -14,7 +14,9 @@ class RuneEmscriptenServerTransport implements Transport {
 
   constructor(options: RuneLanguageServerOptions) {
     this.server = new RuneLanguageServer(options);
-    this.server.subscribe((message) => this.broadcast(JSON.stringify(message)));
+    this.server.addEventListener("lsp-message", (event) =>
+      this.broadcast(JSON.stringify(event.detail)),
+    );
   }
 
   protected broadcast(message: string) {

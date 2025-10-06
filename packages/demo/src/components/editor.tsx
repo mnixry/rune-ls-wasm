@@ -32,7 +32,6 @@ const EditorInner: React.FC<ReactCodeMirrorProps> = ({
     async () => {
       const { client, server } = await createRuneLanguageServer({
         logLevel: "trace",
-        subscribeErrorHandler: console.error,
       });
       return { client, server };
     },
