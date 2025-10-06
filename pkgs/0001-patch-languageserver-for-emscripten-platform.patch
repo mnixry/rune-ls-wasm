@@ -1,13 +1,14 @@
-From 43b40a123cb610465f4183f2d140163a5c46d3d1 Mon Sep 17 00:00:00 2001
+From d39e4d0e8dfa360f29d5beefe8642144dd62035a Mon Sep 17 00:00:00 2001
 From: HexMix <32300164+mnixry@users.noreply.github.com>
-Date: Sun, 5 Oct 2025 22:04:35 +0800
+Date: Mon, 6 Oct 2025 11:41:23 +0800
 Subject: [PATCH] patch languageserver for emscripten platform
 
 ---
- .cargo/config.toml                    | 21 +++++++++++++++++++++
- crates/rune-languageserver/Cargo.toml | 24 +++++++++++++++++++++++-
- crates/rune/src/languageserver/mod.rs | 19 ++++++++++++++++---
- 3 files changed, 60 insertions(+), 4 deletions(-)
+ .cargo/config.toml                      | 21 +++++++++++++++++++
+ crates/rune-languageserver/Cargo.toml   | 28 ++++++++++++++++++++++++-
+ crates/rune/src/languageserver/mod.rs   | 22 ++++++++++++++++---
+ crates/rune/src/languageserver/state.rs |  7 +++++++
+ 4 files changed, 74 insertions(+), 4 deletions(-)
  create mode 100644 .cargo/config.toml
 
 diff --git a/.cargo/config.toml b/.cargo/config.toml
@@ -38,10 +39,10 @@ index 00000000..9e1ba82f
 +codegen-units = 1
 +panic = "abort"
 diff --git a/crates/rune-languageserver/Cargo.toml b/crates/rune-languageserver/Cargo.toml
-index 10338d54..51935297 100644
+index 10338d54..5b2b5e58 100644
 --- a/crates/rune-languageserver/Cargo.toml
 +++ b/crates/rune-languageserver/Cargo.toml
-@@ -14,14 +14,36 @@ keywords = ["language", "scripting", "scripting-language"]
+@@ -14,14 +14,40 @@ keywords = ["language", "scripting", "scripting-language"]
  categories = ["parser-implementations"]
  
  [dependencies]
@@ -77,10 +78,14 @@ index 10338d54..51935297 100644
 +version = "*"
 +features = ["nightly"]
 +
++[dependencies.rune-tracing]
++path = "../rune-tracing"
++features = ["enabled"]
++
  [build-dependencies]
  anyhow = "1.0.71"
 diff --git a/crates/rune/src/languageserver/mod.rs b/crates/rune/src/languageserver/mod.rs
-index 4cbb5f11..09481a89 100644
+index 4cbb5f11..a58f8e15 100644
 --- a/crates/rune/src/languageserver/mod.rs
 +++ b/crates/rune/src/languageserver/mod.rs
 @@ -27,6 +27,11 @@ use crate::{Context, Options};
@@ -116,6 +121,34 @@ index 4cbb5f11..09481a89 100644
                  };
  
                  let incoming: envelope::IncomingMessage = serde_json::from_slice(frame.content)?;
+@@ -323,6 +336,9 @@ async fn did_change_text_document(
+             if let Some(range) = change.range {
+                 source.modify_lsp_range(&s.encoding, range, &change.text)?;
+                 interest = true;
++            } else {
++                source.modify_content(&change.text)?;
++                interest = true;
+             }
+         }
+     } else {
+diff --git a/crates/rune/src/languageserver/state.rs b/crates/rune/src/languageserver/state.rs
+index d0dfdfe0..fef152f9 100644
+--- a/crates/rune/src/languageserver/state.rs
++++ b/crates/rune/src/languageserver/state.rs
+@@ -894,6 +894,13 @@ impl ServerSource {
+         self.modify_range(start, end, content)
+     }
+ 
++    /// Update whole content of the source.
++    pub(super) fn modify_content(&mut self, content: &str) -> Result<()> {
++        self.content.try_remove(..)?;
++        self.content.try_insert(0, content)?;
++        Ok(())
++    }
++
+     fn modify_range(&mut self, start: usize, end: usize, content: &str) -> Result<()> {
+         self.content.try_remove(start..end)?;
+ 
 -- 
 2.51.0
 
