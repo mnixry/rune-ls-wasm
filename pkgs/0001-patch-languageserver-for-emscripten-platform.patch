@@ -20,7 +20,7 @@ index 00000000..9e1ba82f
 +[target.'cfg(target_family = "wasm")']
 +rustflags = [
 +    "--cfg", "tokio_unstable",
-+    "-C", "link-arg=-pthread", "-C", "link-arg=-flto", "-C", "link-arg=-g",
++    "-C", "link-arg=-pthread", "-C", "link-arg=-flto",
 +    "-C", "target-feature=+atomics,+bulk-memory,+mutable-globals",
 +    "-C", "link-arg=-s", "-C", "link-arg=MODULARIZE=1",
 +    "-C", "link-arg=-s", "-C", "link-arg=FORCE_FILESYSTEM=1",
