@@ -15,10 +15,6 @@
       url = "github:wrvsrx/pnpm2nix-nzbr/adapt-to-v9";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    rune-rs = {
-      url = "github:rune-rs/rune";
-      flake = false;
-    };
   };
 
   outputs =
@@ -31,7 +27,7 @@
     }@inputs:
     let
       inherit (nixpkgs) lib;
-      forAllSystems = lib.genAttrs nixpkgs.lib.systems.flakeExposed;
+      forAllSystems = lib.genAttrs lib.systems.flakeExposed;
       pkgsBySystem = forAllSystems (
         system:
         import nixpkgs {
@@ -48,27 +44,27 @@
         system:
         let
           pkgs = pkgsBySystem.${system};
-          inherit (pkgs) callPackage mkPnpmPackage;
-          version = self.shortRev or self.dirtyShortRev or "unknown";
+          inherit (pkgs) callPackage;
         in
-        rec {
-          rune-ls-wasm = callPackage ./pkgs/rune-ls-wasm.nix { inherit inputs; };
-          demo = mkPnpmPackage {
-            pname = "rune-ls-demo";
-            inherit version;
-            src = ./.;
-            installInPlace = true;
-            prePatch = ''
-              ln -s ${rune-ls-wasm} result
-            '';
-            preConfigure = ''
-              pnpm config set --global manage-package-manager-versions false
-            '';
-            distDir = "packages/demo/dist";
-            packageJSON = pkgs.writers.writeJSON "package.json" (
-              builtins.removeAttrs (lib.importJSON ./package.json) [ "packageManager" ]
-            );
-          };
+        {
+          rune-languageserver = callPackage ./crates/rune-languageserver/default.nix { inherit inputs; };
+          demo = callPackage ./packages/demo/default.nix { inherit inputs; };
+        }
+      );
+      devShells = forAllSystems (
+        system:
+        let
+          pkgs = pkgsBySystem.${system};
+          inherit (pkgs) mkShell;
+          inherit (self.packages.${system}.rune-languageserver) rust;
+        in
+        mkShell {
+          buildInputs = with pkgs; [
+            rust
+            pkg-config
+            openssl
+            emscripten
+          ];
         }
       );
     };
