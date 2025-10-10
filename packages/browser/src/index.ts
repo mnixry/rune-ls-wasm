@@ -8,6 +8,19 @@ export interface RuneLanguageServerOptions {
   logLevel?: "trace" | "debug" | "info" | "warn" | "error";
 }
 
+export type LogMessage = {
+  timestamp: string;
+  level: string;
+  fields: { message?: string; [key: string]: unknown };
+  target: string;
+} & (
+  | {
+      span: { item: string; name: string };
+      spans: { item: string; name: string }[];
+    }
+  | never
+);
+
 class StdinQueue {
   protected readonly encoder = new TextEncoder();
   protected readonly messages = [] as Uint8Array[];
@@ -94,7 +107,7 @@ class StdoutSubscriber {
 
 export interface RuneLanguageServerEventsMap {
   "lsp-message": CustomEvent<LSPMessage>;
-  log: CustomEvent<string>;
+  log: CustomEvent<LogMessage>;
   start: CustomEvent<void>;
   exit: CustomEvent<number>;
   abort: CustomEvent<string>;
@@ -127,7 +140,8 @@ export class RuneLanguageServer {
           : [],
         stdin: () => stdin.dequeueByte(),
         stdout: (byte) => stdout.writeByte(byte),
-        printErr: (message) => this.dispatchEvent("log", message),
+        printErr: (message) =>
+          this.dispatchEvent("log", JSON.parse(message.trim())),
         preRun: (module) => {
           this.module = module;
           this.dispatchEvent("start", undefined);
