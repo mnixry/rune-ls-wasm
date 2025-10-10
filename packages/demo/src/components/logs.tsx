@@ -8,7 +8,6 @@ import {
   useDynamicRowHeight,
   useListCallbackRef,
 } from "react-window";
-import { useTheme } from "@/components/theme-provider";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -20,7 +19,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useLanguageServerEvent } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
-import styles from "./logs.module.css";
 
 const textToColor = (text: string) => {
   const hash = text.split("").reduce((acc, char) => {
@@ -144,7 +142,6 @@ export const Logs: React.FC<React.ComponentProps<"div">> = ({
   className,
   ...props
 }) => {
-  const { computedTheme } = useTheme();
   const linesRef = useRef<LogMessage[]>([]);
   const [lines, setLines] = useRafState<LogMessage[]>([]);
   const [autoScrolling, setAutoScrolling] = useState(true);
@@ -213,10 +210,7 @@ export const Logs: React.FC<React.ComponentProps<"div">> = ({
       </div>
       <div className="flex-1 min-h-0">
         <List
-          className={cn(
-            "h-full",
-            computedTheme === "dark" ? styles.logsDark : styles.logs,
-          )}
+          className="h-full"
           rowComponent={LogRow}
           rowCount={filteredLines.length}
           rowHeight={rowHeight}
