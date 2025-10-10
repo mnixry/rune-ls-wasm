@@ -18,7 +18,7 @@ Prerequisites: Nix with flakes enabled.
 - Build the WebAssembly language server artifact:
 
 ```bash
-nix build .#rune-ls-wasm
+nix build .#rune-languageserver
 ```
 
 Outputs:
