@@ -13,10 +13,10 @@
   "keywords": [],
   "author": "",
   "license": "MIT",
-  "packageManager": "pnpm@10.18.0",
+  "packageManager": "pnpm@10.18.2",
   "devDependencies": {
     "@biomejs/biome": "^2.2.5",
-    "@types/node": "^24.6.2",
+    "@types/node": "^24.7.1",
     "typescript": "^5.9.3"
   }
 }
