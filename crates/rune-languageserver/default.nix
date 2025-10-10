@@ -1,7 +1,6 @@
 {
   rust-bin,
   callPackage,
-  stdenvNoCC,
   emscripten,
   prettier,
   inputs,
@@ -13,7 +12,7 @@ let
     extensions = [ "rust-src" ];
     targets = [ target ];
   };
-  inherit (inputs) naersk rune-rs;
+  inherit (inputs) naersk;
   inherit
     (callPackage naersk {
       cargo = rust;
@@ -22,21 +21,8 @@ let
     buildPackage
     ;
 in
-buildPackage rec {
-  name = "rune-languageserver";
-  version = rune-rs.shortRev;
-  src = stdenvNoCC.mkDerivation {
-    name = "${name}-src";
-    inherit version;
-    src = rune-rs;
-    patches = [ ./0001-patch-languageserver-for-emscripten-platform.patch ];
-    postPatch = ''
-      ln -s ${./Cargo.lock} Cargo.lock
-    '';
-    installPhase = ''
-      cp -r . $out
-    '';
-  };
+buildPackage {
+  src = inputs.self;
   additionalCargoLock = "${rust}/lib/rustlib/src/rust/library/Cargo.lock";
 
   doCheck = false;
@@ -44,17 +30,8 @@ buildPackage rec {
     emscripten
     prettier
   ];
-  env.RUNE_VERSION = version;
 
-  cargoBuildOptions =
-    prev:
-    [
-      "--target"
-      target
-      "--package"
-      "rune-languageserver"
-    ]
-    ++ prev;
+  cargoBuildOptions = prev: [ "--target=${target}" ] ++ prev;
 
   copyBins = false;
   copyLibs = false;
@@ -64,4 +41,8 @@ buildPackage rec {
     install -Dm 755 ./target/${target}/release/rune_languageserver.wasm $out/lib/rune_languageserver.wasm
     prettier $out/lib/rune_languageserver.js --write
   '';
+
+  passthru = {
+    inherit target rust;
+  };
 }

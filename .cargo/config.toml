@@ -1,0 +1,23 @@
+[target.wasm32-unknown-emscripten]
+rustflags = [
+    "--cfg=tokio_unstable",
+    "-Clink-arg=-pthread",
+    "-Clink-arg=-flto",
+    "-Ctarget-feature=+atomics,+bulk-memory,+mutable-globals",
+    "-Clink-arg=-sMODULARIZE=1",
+    "-Clink-arg=-sFORCE_FILESYSTEM=1",
+    "-Clink-arg=-sEXPORTED_RUNTIME_METHODS=FS,ENV",
+    "-Clink-arg=-sASYNCIFY=1",
+    "-Clink-arg=-sEXPORT_ES6=1",
+    "-Clink-arg=-sPTHREAD_POOL_SIZE=4",
+    "-Clink-arg=-sALLOW_MEMORY_GROWTH=1",
+]
+
+[unstable]
+build-std = ["core", "std", "alloc", "proc_macro", "panic_abort"]
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"

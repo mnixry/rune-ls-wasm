@@ -1,0 +1,45 @@
+[package]
+name = "rune-languageserver"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "*", features = ["derive"] }
+anyhow = "*"
+tracing = "*"
+tracing-appender = "*"
+tracing-subscriber = { version = "*", features = ["env-filter", "fmt", "json"] }
+
+[dependencies.tokio]
+version = "*"
+features = ["sync", "macros", "io-util", "rt", "time", "parking_lot"]
+
+[dependencies.parking_lot]
+version = "*"
+features = ["nightly"]
+
+[dependencies.rune]
+git = "https://github.com/rune-rs/rune"
+features = ["languageserver"]
+
+[dependencies.rune-tracing]
+git = "https://github.com/rune-rs/rune"
+features = ["enabled"]
+
+[dependencies.rune-modules]
+git = "https://github.com/rune-rs/rune"
+default-features = false
+features = [
+    "time",
+    "json",
+    "toml",
+    "fs",
+    "rand",
+    "os_rng",
+    "small_rng",
+    "std_rng",
+    "thread_rng",
+    "io",
+    "fmt",
+    "base64",
+]
