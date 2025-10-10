@@ -42,9 +42,9 @@ caddy file-server --root ./result --listen :5173 \
 
 ## Project Structure
 
-- `pkgs/`: Nix scripts for building the Rune Language Server to WebAssembly with minor patches.
 - `packages/browser/`: TypeScript wrapper exposing `RuneLanguageServer` for the browser.
 - `packages/demo/`: React + Vite demo wired to CodeMirror and the in-browser LSP.
+- `crates/rune-languageserver/`: The Rune Language Server crate with `wasm32-unknown-emscripten` target support.
 
 ## License
 
