@@ -92,8 +92,6 @@ class StdoutSubscriber {
   }
 }
 
-const RUNE_LOG_FILE = "/dev/stderr";
-
 export interface RuneLanguageServerEventsMap {
   "lsp-message": CustomEvent<LSPMessage>;
   log: CustomEvent<string>;
@@ -124,14 +122,13 @@ export class RuneLanguageServer {
 
     return await new Promise<void>((resolve, reject) =>
       factory({
+        arguments: this.options.logLevel
+          ? ["--log-filter", this.options.logLevel, "--log-format", "json"]
+          : [],
         stdin: () => stdin.dequeueByte(),
         stdout: (byte) => stdout.writeByte(byte),
         printErr: (message) => this.dispatchEvent("log", message),
         preRun: (module) => {
-          if (this.options.logLevel) {
-            module.ENV.RUNE_LOG = this.options.logLevel;
-            module.ENV.RUNE_LOG_FILE = RUNE_LOG_FILE;
-          }
           this.module = module;
           this.dispatchEvent("start", undefined);
           resolve();
