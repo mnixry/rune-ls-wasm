@@ -1,7 +1,7 @@
 import type { LogMessage } from "@runels-wasm/browser";
 import { ArrowRightIcon } from "lucide-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useRafState } from "react-use";
+import { useInterval } from "react-use";
 import {
   List,
   type RowComponentProps,
@@ -143,18 +143,21 @@ export const Logs: React.FC<React.ComponentProps<"div">> = ({
   ...props
 }) => {
   const linesRef = useRef<LogMessage[]>([]);
-  const [lines, setLines] = useRafState<LogMessage[]>([]);
+  const [lines, setLines] = useState<LogMessage[]>([]);
   const [autoScrolling, setAutoScrolling] = useState(true);
   const [listApi, listRef] = useListCallbackRef(null);
   const rowHeight = useDynamicRowHeight({ defaultRowHeight: 20 });
 
-  const onLog = useCallback(
-    (e: CustomEvent<LogMessage>) => {
-      linesRef.current.push(e.detail);
+  const onLog = useCallback((e: CustomEvent<LogMessage>) => {
+    linesRef.current.push(e.detail);
+    if (linesRef.current.length % 500 === 0) {
       setLines(linesRef.current.slice());
-    },
-    [setLines],
-  );
+    }
+  }, []);
+
+  useInterval(() => {
+    setLines(linesRef.current.slice());
+  }, 500);
 
   useLanguageServerEvent("log", onLog);
 
